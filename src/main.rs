@@ -20,6 +20,8 @@ use std::error::Error;
 
 use esp_idf_sys as _; // If using the `binstart` feature of `esp-idf-sys`, always keep this module imported
 
+mod gb;
+
 fn main() -> Result<(), Box<dyn Error>> {
     // It is necessary to call this function once. Otherwise some patches to the runtime
     // implemented by esp-idf-sys might not link properly. See https://github.com/esp-rs/esp-idf-template/issues/71
@@ -89,7 +91,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Turn text to blue
     style.set_text_color(Some(Rgb565::BLUE));
-    Text::new("World", Point::new(160, 26), style)
+    Text::new("achester88", Point::new(160, 26), style)
         .draw(&mut display)
         .map_err(|_| Box::<dyn Error>::from("draw world"))?;
 
