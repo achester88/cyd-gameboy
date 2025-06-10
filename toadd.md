@@ -22,11 +22,6 @@ LD A,[HLD]
 
 8-bit arithmetic instructions
 
-ADC A,[HL]
-ADC A,n8
-ADD A,r8
-ADD A,[HL]
-ADD A,n8
 CP A,r8
 CP A,[HL]
 CP A,n8
@@ -43,7 +38,6 @@ SUB A,n8
 
 16-bit arithmetic instructions
 
-ADD HL,r16
 DEC r16
 INC r16
 
@@ -113,8 +107,6 @@ SCF
 
 Stack manipulation instructions
 
-ADD HL,SP
-ADD SP,e8
 DEC SP
 INC SP
 LD SP,n16
@@ -135,5 +127,4 @@ HALT
 Miscellaneous instructions
 
 DAA
-NOP
 STOP
