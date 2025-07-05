@@ -119,18 +119,48 @@ impl Cpu {
                     LoadType::Byte(target, source) => {
                         let source_value = match source {
                             LoadByteSource::A => self.registers.a,
+                            LoadByteSource::B => self.registers.b,
+                            LoadByteSource::C => self.registers.c,
+                            LoadByteSource::D => self.registers.d,
+                            LoadByteSource::E => self.registers.e,
+                            LoadByteSource::H => self.registers.h,
+                            LoadByteSource::L => self.registers.l,
                             LoadByteSource::D8 => self.read_next_byte(),
-                            LoadByteSource::HLI => self.bus.read_byte(self.registers.get_hl()),
-                            _ => { todo!() }
+                            LoadByteSource::HL | LoadByteSource::HLI | LoadByteSource::HLD => self.bus.read_byte(self.registers.get_hl()),
+                            LoadByteSource::BC => self.bus.read_byte(self.registers.get_bc()),
+                            LoadByteSource::DE => self.bus.read_byte(self.registers.get_de()),
+                            LoadByteSource::D16 => self.bus.read_byte(self.read_next_word()),
+                            LoadByteSource::ADRC => self.bus.read_byte((0xFF00 | self.registers.c as u16)),
+                            LoadByteSource::A8 => self.bus.read_byte((0xFF00 | self.read_next_byte() as u16)),
+
                         };
 
                         match target {
-                            LoadByteTarget::A => self.registers.a = source_value,
-                            //LoadByteTarget::D8 => self.bus.write_byte(self.registers.get_hl(), source_value),
-                            _ => { todo!() }
+                             LoadByteTarget::A => self.registers.a = source_value,
+                             LoadByteTarget::B => self.registers.b = source_value,
+                             LoadByteTarget::C => self.registers.c = source_value,
+                             LoadByteTarget::D => self.registers.d = source_value,
+                             LoadByteTarget::E => self.registers.e = source_value,
+                             LoadByteTarget::H => self.registers.h = source_value,
+                             LoadByteTarget::L => self.registers.l = source_value,
+                             LoadByteTarget::HL | LoadByteTarget::HLI | LoadByteTarget::HLD => self.bus.write_byte(self.registers.get_hl(), source_value),
+                             LoadByteTarget::BC => self.bus.write_byte(self.registers.get_bc(), source_value),
+                             LoadByteTarget::DE => self.bus.write_byte(self.registers.get_de(), source_value),
+                             LoadByteTarget::D16 => self.bus.write_byte(self.read_next_word(), source_value),
+                             LoadByteTarget::ADRC => self.bus.write_byte((0xFF00 | self.registers.c as u16), source_value),
+                             LoadByteTarget::A8 => self.bus.write_byte((0xFF00 | self.read_next_byte() as u16), source_value),
                         };
 
-                        match source {
+                        if source == LoadByteSource::HLI || target == LoadByteTarget::HLI {
+                            self.registers.set_hl(self.registers.get_hl().wrapping_add(1));
+                        }
+
+                        if source == LoadByteSource::HLD || target == LoadByteTarget::HLD {
+                            self.registers.set_hl(self.registers.get_hl().wrapping_sub(1));
+                        }
+
+
+                       match source {
                             LoadByteSource::D8 => self.pc.wrapping_add(2),
                             _                  => self.pc.wrapping_add(1),
                         }

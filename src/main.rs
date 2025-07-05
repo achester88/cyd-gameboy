@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut display = Builder::ili9341_rgb565(di)
         .with_color_order(mipidsi::ColorOrder::Rgb)
-        .with_orientation(mipidsi::options::Orientation::LandscapeInverted(true))  // Mirror on text
+        .with_orientation(mipidsi::options::Orientation::LandscapeInverted(false))  // Mirror on text
         .init(&mut delay, Some(rst))
         .map_err(|_| Box::<dyn Error>::from("display init"))?;
 
