@@ -1,3 +1,4 @@
+#[derive(PartialEq)]
 pub enum JumpTest {
     NotZero,
     Zero,
@@ -6,6 +7,7 @@ pub enum JumpTest {
     Always
 }
 
+#[derive(PartialEq)]
 pub enum ArithmeticTarget {
     A, B, C, D, E, H, L, HL, N8
 }
@@ -30,22 +32,28 @@ pub enum LoadWordTarget {
     BC, DE, HL, SP, A16
 }
 
+#[derive(PartialEq)]
 pub enum WordTarget {
     BC, DE, HL, SP
 }
 
+#[derive(PartialEq)]
 pub enum StackTarget {
     BC
 }
 
+#[derive(PartialEq)]
 pub enum LoadType {
     Byte(LoadByteTarget, LoadByteSource),
     Word(LoadWordTarget, LoadWordSource),
 }
 
+#[derive(PartialEq)]
 pub enum Instruction {
     ADD(ArithmeticTarget),
     ADC(ArithmeticTarget),
+    SUB(ArithmeticTarget),
+    SBC(ArithmeticTarget),
     ADDHL(WordTarget),
     ADDSP,
     JP(JumpTest),
@@ -54,7 +62,11 @@ pub enum Instruction {
     POP(StackTarget),
     CALL(JumpTest),
     RET(JumpTest),
-    NOP
+    NOP,
+    AND(ArithmeticTarget),
+    XOR(ArithmeticTarget),
+    OR(ArithmeticTarget),
+    CP(ArithmeticTarget)
 }
 
 impl Instruction {
@@ -190,19 +202,79 @@ impl Instruction {
       0x8E => Some((Instruction::ADC(ArithmeticTarget::HL), 2)),
       0x8F => Some((Instruction::ADC(ArithmeticTarget::A), 1)),
 
-      0xC6 => Some((Instruction::ADC(ArithmeticTarget::N8), 2)),
+      0x90 => Some((Instruction::SUB(ArithmeticTarget::B), 1)),
+      0x91 => Some((Instruction::SUB(ArithmeticTarget::C), 1)),
+      0x92 => Some((Instruction::SUB(ArithmeticTarget::D), 1)),
+      0x93 => Some((Instruction::SUB(ArithmeticTarget::E), 1)),
+      0x94 => Some((Instruction::SUB(ArithmeticTarget::H), 1)),
+      0x95 => Some((Instruction::SUB(ArithmeticTarget::L), 1)),
+      0x96 => Some((Instruction::SUB(ArithmeticTarget::HL), 2)),
+      0x97 => Some((Instruction::SUB(ArithmeticTarget::A), 1)),
+      0x98 => Some((Instruction::SBC(ArithmeticTarget::B), 1)),
+      0x99 => Some((Instruction::SBC(ArithmeticTarget::C), 1)),
+      0x9A => Some((Instruction::SBC(ArithmeticTarget::D), 1)),
+      0x9B => Some((Instruction::SBC(ArithmeticTarget::E), 1)),
+      0x9C => Some((Instruction::SBC(ArithmeticTarget::H), 1)),
+      0x9D => Some((Instruction::SBC(ArithmeticTarget::L), 1)),
+      0x9E => Some((Instruction::SBC(ArithmeticTarget::HL), 2)),
+      0xDE => Some((Instruction::SBC(ArithmeticTarget::N8), 2)),
+      0x9F => Some((Instruction::SBC(ArithmeticTarget::A), 1)),
+
+      0xA0 => Some((Instruction::SUB(ArithmeticTarget::B), 1)),
+      0xA1 => Some((Instruction::SUB(ArithmeticTarget::C), 1)),
+      0xA2 => Some((Instruction::SUB(ArithmeticTarget::D), 1)),
+      0xA3 => Some((Instruction::SUB(ArithmeticTarget::E), 1)),
+      0xA4 => Some((Instruction::SUB(ArithmeticTarget::H), 1)),
+      0xA5 => Some((Instruction::SUB(ArithmeticTarget::L), 1)),
+      0xA6 => Some((Instruction::SUB(ArithmeticTarget::HL), 2)),
+      0xA7 => Some((Instruction::SUB(ArithmeticTarget::A), 1)),
+      0xA8 => Some((Instruction::XOR(ArithmeticTarget::B), 1)),
+      0xA9 => Some((Instruction::XOR(ArithmeticTarget::C), 1)),
+      0xAA => Some((Instruction::XOR(ArithmeticTarget::D), 1)),
+      0xAB => Some((Instruction::XOR(ArithmeticTarget::E), 1)),
+      0xAC => Some((Instruction::XOR(ArithmeticTarget::H), 1)),
+      0xAD => Some((Instruction::XOR(ArithmeticTarget::L), 1)),
+      0xAE => Some((Instruction::XOR(ArithmeticTarget::HL), 2)),
+      0xAF => Some((Instruction::XOR(ArithmeticTarget::A), 1)),
+
+      0xB0 => Some((Instruction::OR(ArithmeticTarget::B), 1)),
+      0xB1 => Some((Instruction::OR(ArithmeticTarget::C), 1)),
+      0xB2 => Some((Instruction::OR(ArithmeticTarget::D), 1)),
+      0xB3 => Some((Instruction::OR(ArithmeticTarget::E), 1)),
+      0xB4 => Some((Instruction::OR(ArithmeticTarget::H), 1)),
+      0xB5 => Some((Instruction::OR(ArithmeticTarget::L), 1)),
+      0xB6 => Some((Instruction::OR(ArithmeticTarget::HL), 2)),
+      0xB7 => Some((Instruction::OR(ArithmeticTarget::A), 1)),
+      0xB8 => Some((Instruction::CP(ArithmeticTarget::B), 1)),
+      0xB9 => Some((Instruction::CP(ArithmeticTarget::C), 1)),
+      0xBA => Some((Instruction::CP(ArithmeticTarget::D), 1)),
+      0xBB => Some((Instruction::CP(ArithmeticTarget::E), 1)),
+      0xBC => Some((Instruction::CP(ArithmeticTarget::H), 1)),
+      0xBD => Some((Instruction::CP(ArithmeticTarget::L), 1)),
+      0xBE => Some((Instruction::CP(ArithmeticTarget::HL), 2)),
+      0xBF => Some((Instruction::CP(ArithmeticTarget::A), 1)),
+
+      0xC6 => Some((Instruction::ADD(ArithmeticTarget::N8), 2)),
       0xCE => Some((Instruction::ADC(ArithmeticTarget::N8), 2)),
-    
+
+      0xD6 => Some((Instruction::SUB(ArithmeticTarget::N8), 2)),
+      0xDE => Some((Instruction::SBC(ArithmeticTarget::N8), 2)),
+
       0xE0 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::A8, LoadByteSource::A)), 2)),
       0xE2 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::ADRC, LoadByteSource::A)), 2)),
+      0xE6 => Some((Instruction::AND(ArithmeticTarget::N8), 2)),      
       0xE8 => Some((Instruction::ADDSP, 4)),
       0xEA => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::D16, LoadByteSource::A)), 4)),
+      0xEE => Some((Instruction::XOR(ArithmeticTarget::N8), 2)),
 
       0xF0 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::A, LoadByteSource::A8)), 2)),
       0xF2 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::A, LoadByteSource::ADRC)), 2)),
+      0xF6 => Some((Instruction::OR(ArithmeticTarget::N8), 2)),
       0xF8 => Some((Instruction::LD(LoadType::Word(LoadWordTarget::HL, LoadWordSource::SP8)), 4)),
       0xF9 => Some((Instruction::LD(LoadType::Word(LoadWordTarget::SP, LoadWordSource::HL)), 2)),
       0xFA => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::A, LoadByteSource::D16)), 4)),
+      0xFE => Some((Instruction::CP(ArithmeticTarget::N8), 2)),
+
       _ => None
     }
   }

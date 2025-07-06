@@ -33,18 +33,115 @@ impl Cpu {
            Instruction::NOP => {
                self.pc.wrapping_add(4)
            },
-           Instruction::ADD(target) => {
-                
+           Instruction::ADD(ref target) | Instruction::ADC(ref target) => {
+               
+               let carry = match instruction {
+                   Instruction::ADC(_) => true,
+                   _ => false
+               };
+
                 self.registers.a = match target {
-                   ArithmeticTarget::A => self.add(self.registers.a, false),
-                   ArithmeticTarget::B => self.add(self.registers.b, false),
-                   ArithmeticTarget::C => self.add(self.registers.c, false),
-                   ArithmeticTarget::D => self.add(self.registers.d, false),
-                   ArithmeticTarget::E => self.add(self.registers.e, false),
-                   ArithmeticTarget::H => self.add(self.registers.h, false),
-                   ArithmeticTarget::L => self.add(self.registers.l, false),
-                   ArithmeticTarget::HL => self.add(self.bus.read_byte(self.registers.get_hl()), false),
-                   ArithmeticTarget::N8 => self.add(self.read_next_byte(), false)
+                   ArithmeticTarget::A => self.add(self.registers.a, carry),
+                   ArithmeticTarget::B => self.add(self.registers.b, carry),
+                   ArithmeticTarget::C => self.add(self.registers.c, carry),
+                   ArithmeticTarget::D => self.add(self.registers.d, carry),
+                   ArithmeticTarget::E => self.add(self.registers.e, carry),
+                   ArithmeticTarget::H => self.add(self.registers.h, carry),
+                   ArithmeticTarget::L => self.add(self.registers.l, carry),
+                   ArithmeticTarget::HL => self.add(self.bus.read_byte(self.registers.get_hl()), carry),
+                   ArithmeticTarget::N8 => self.add(self.read_next_byte(), carry)
+                };
+
+                match target {
+                    ArithmeticTarget::N8 => self.pc.wrapping_add(2),
+                    _ => self.pc.wrapping_add(1)
+                }
+                
+           },
+           Instruction::SUB(ref target) | Instruction::SBC(ref target) => {
+               
+               let carry = match &instruction {
+                   &Instruction::SBC(_) => true,
+                   _ => false
+               };
+
+                self.registers.a = match target {
+                   ArithmeticTarget::A => {
+                       let old_carry = if carry {self.registers.f.carry} else {false};
+                       let val = self.sub(self.registers.a, carry);
+                       self.registers.f.carry = old_carry;
+                       val
+                   },
+                   ArithmeticTarget::B => self.sub(self.registers.b, carry),
+                   ArithmeticTarget::C => self.sub(self.registers.c, carry),
+                   ArithmeticTarget::D => self.sub(self.registers.d, carry),
+                   ArithmeticTarget::E => self.sub(self.registers.e, carry),
+                   ArithmeticTarget::H => self.sub(self.registers.h, carry),
+                   ArithmeticTarget::L => self.sub(self.registers.l, carry),
+                   ArithmeticTarget::HL => self.sub(self.bus.read_byte(self.registers.get_hl()), carry),
+                   ArithmeticTarget::N8 => self.sub(self.read_next_byte(), carry)
+                };
+
+                match target {
+                    ArithmeticTarget::N8 => self.pc.wrapping_add(2),
+                    _ => self.pc.wrapping_add(1)
+                }
+                
+           },
+           Instruction::AND(target) => {
+                self.registers.a = match target {
+                   ArithmeticTarget::A => self.and(self.registers.a),
+                   ArithmeticTarget::B => self.and(self.registers.b),
+                   ArithmeticTarget::C => self.and(self.registers.c),
+                   ArithmeticTarget::D => self.and(self.registers.d),
+                   ArithmeticTarget::E => self.and(self.registers.e),
+                   ArithmeticTarget::H => self.and(self.registers.h),
+                   ArithmeticTarget::L => self.and(self.registers.l),
+                   ArithmeticTarget::HL => self.and(self.bus.read_byte(self.registers.get_hl())),
+                   ArithmeticTarget::N8 => self.and(self.read_next_byte())
+                };
+
+                match target {
+                    ArithmeticTarget::N8 => self.pc.wrapping_add(2),
+                    _ => self.pc.wrapping_add(1)
+                }
+                
+           },
+           Instruction::OR(ref target) | Instruction::XOR(ref target) => {
+               let not = match &instruction {
+                   &Instruction::XOR(_) => true,
+                   _ => false
+               };
+
+                self.registers.a = match target {
+                   ArithmeticTarget::A => self.or(self.registers.a, not),
+                   ArithmeticTarget::B => self.or(self.registers.b, not),
+                   ArithmeticTarget::C => self.or(self.registers.c, not),
+                   ArithmeticTarget::D => self.or(self.registers.d, not),
+                   ArithmeticTarget::E => self.or(self.registers.e, not),
+                   ArithmeticTarget::H => self.or(self.registers.h, not),
+                   ArithmeticTarget::L => self.or(self.registers.l, not),
+                   ArithmeticTarget::HL => self.or(self.bus.read_byte(self.registers.get_hl()), not),
+                   ArithmeticTarget::N8 => self.or(self.read_next_byte(), not)
+                };
+
+                match target {
+                    ArithmeticTarget::N8 => self.pc.wrapping_add(2),
+                    _ => self.pc.wrapping_add(1)
+                }
+                
+           },
+           Instruction::CP(target) => {
+                self.registers.a = match target {
+                   ArithmeticTarget::A => self.sub(self.registers.a, false), //may need to set flags 1100
+                   ArithmeticTarget::B => self.sub(self.registers.b, false),
+                   ArithmeticTarget::C => self.sub(self.registers.c, false),
+                   ArithmeticTarget::D => self.sub(self.registers.d, false),
+                   ArithmeticTarget::E => self.sub(self.registers.e, false),
+                   ArithmeticTarget::H => self.sub(self.registers.h, false),
+                   ArithmeticTarget::L => self.sub(self.registers.l, false),
+                   ArithmeticTarget::HL => self.sub(self.bus.read_byte(self.registers.get_hl()), false),
+                   ArithmeticTarget::N8 => self.sub(self.read_next_byte(), false)
                 };
 
                 match target {
@@ -70,7 +167,7 @@ impl Cpu {
 
                self.pc.wrapping_add(2)
            }
-           Instruction::ADC(target) => {
+           /*Instruction::ADC(target) => {
                 self.registers.a = match target {
                    ArithmeticTarget::A => self.add(self.registers.a, true),
                    ArithmeticTarget::B => self.add(self.registers.b, true),
@@ -87,7 +184,7 @@ impl Cpu {
                     ArithmeticTarget::N8 => self.pc.wrapping_add(2),
                     _ => self.pc.wrapping_add(1)
                 }  
-           },
+           },*/
            Instruction::JP(test) => {
                let jump_cond = match test {
                    JumpTest::NotZero => !self.registers.f.zero,
@@ -286,6 +383,17 @@ impl Cpu {
         new_value
    }
 
+    fn sub(&mut self, val: u8, carry: bool) -> u8 {
+         let (new_value, did_overflow) = self.registers.a.overflowing_sub(val + (if carry {1} else {0}));
+
+        self.registers.f.zero = new_value == 0;
+        self.registers.f.subtract = true;
+        self.registers.f.carry = did_overflow;
+        self.registers.f.half_carry = (self.registers.a & 0b1111) + (val & 0b1111) > 0b1111;
+
+        new_value
+   }
+
     fn addhl(&mut self, val: u16) -> u16 {
         let (new_value, did_overflow) = self.registers.get_hl().overflowing_add(val);
 
@@ -294,6 +402,26 @@ impl Cpu {
         self.registers.f.half_carry = (self.registers.get_hl() & 0b11111111) + (val & 0b11111111) > 0b11111111;
 
         new_value
+    }
+
+    fn and(&mut self, val: u8) -> u8 {
+        let val = self.registers.a & val;
+        self.registers.f.zero = if val == 0 {true} else {false};
+        self.registers.f.half_carry = true;
+        self.registers.f.subtract = false;
+        self.registers.f.carry = false;
+
+        val
+    }
+
+    fn or(&mut self, val: u8, not: bool) -> u8 {
+        let val = if not {self.registers.a ^ val} else {self.registers.a | val};
+        self.registers.f.zero = if val == 0 {true} else {false};
+        self.registers.f.half_carry = false;
+        self.registers.f.subtract = false;
+        self.registers.f.carry = false;
+
+        val
     }
 
     fn read_next_byte(&self) -> u8 {

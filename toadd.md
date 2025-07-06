@@ -1,31 +1,9 @@
-
-Load instructions
-
-LD r16,n16
-LD [r16],A
-LD [n16],A
-LDH [n16],A
-LDH [C],A
-LD A,[r16]
-LD A,[n16]
-LDH A,[n16]
-LDH A,[C]
-
 8-bit arithmetic instructions
 
-CP A,r8
-CP A,[HL]
-CP A,n8
 DEC r8
 DEC [HL]
 INC r8
 INC [HL]
-SBC A,r8
-SBC A,[HL]
-SBC A,n8
-SUB A,r8
-SUB A,[HL]
-SUB A,n8
 
 16-bit arithmetic instructions
 
@@ -34,16 +12,7 @@ INC r16
 
 Bitwise logic instructions
 
-AND A,r8
-AND A,[HL]
-AND A,n8
 CPL
-OR A,r8
-OR A,[HL]
-OR A,n8
-XOR A,r8
-XOR A,[HL]
-XOR A,n8
 
 Bit flag instructions
 
@@ -100,10 +69,6 @@ Stack manipulation instructions
 
 DEC SP
 INC SP
-LD SP,n16
-LD [n16],SP
-LD HL,SP+e8
-LD SP,HL
 POP AF
 POP r16
 PUSH AF
