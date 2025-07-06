@@ -20,6 +20,16 @@ pub enum LoadByteSource {
     A, B, C, D, E, H, L, D8, HL, HLI, HLD, DE, BC, D16, ADRC, A8
 }
 
+#[derive(PartialEq)]
+pub enum LoadWordSource {
+    D16, SP, HL, SP8
+}
+
+#[derive(PartialEq)]
+pub enum LoadWordTarget {
+    BC, DE, HL, SP, A16
+}
+
 pub enum WordTarget {
     BC, DE, HL, SP
 }
@@ -29,7 +39,8 @@ pub enum StackTarget {
 }
 
 pub enum LoadType {
-    Byte(LoadByteTarget, LoadByteSource)
+    Byte(LoadByteTarget, LoadByteSource),
+    Word(LoadWordTarget, LoadWordSource),
 }
 
 pub enum Instruction {
@@ -65,24 +76,29 @@ impl Instruction {
   fn from_byte_not_prefixed(byte: u8) -> Option<(Instruction, u8)> {
     match byte {
       0x00 => Some((Instruction::NOP, 1)),
+      0x01 => Some((Instruction::LD(LoadType::Word(LoadWordTarget::BC, LoadWordSource::D16)), 3)),
       0x02 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::BC, LoadByteSource::A)), 2)),
       0x06 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::B, LoadByteSource::D8)), 2)),
+      0x08 => Some((Instruction::LD(LoadType::Word(LoadWordTarget::A16, LoadWordSource::SP)), 5)),
       0x09 => Some((Instruction::ADDHL(WordTarget::BC), 2)),
       0x0A => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::A, LoadByteSource::BC)), 2)),
       0x0E => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::C, LoadByteSource::D8)), 2)),
 
+      0x11 => Some((Instruction::LD(LoadType::Word(LoadWordTarget::DE, LoadWordSource::D16)), 3)),
       0x12 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::DE, LoadByteSource::A)), 2)),
       0x16 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::D, LoadByteSource::D8)), 2)),
       0x19 => Some((Instruction::ADDHL(WordTarget::DE), 2)),
       0x1A => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::A, LoadByteSource::DE)), 2)),
       0x1E => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::E, LoadByteSource::D8)), 2)),
 
+      0x21 => Some((Instruction::LD(LoadType::Word(LoadWordTarget::HL, LoadWordSource::D16)), 3)),
       0x22 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::HLI, LoadByteSource::A)), 2)),
       0x26 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::H, LoadByteSource::D8)), 2)),
       0x29 => Some((Instruction::ADDHL(WordTarget::HL), 2)),
       0x2A => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::A, LoadByteSource::HLI)), 2)),
       0x2E => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::L, LoadByteSource::D8)), 2)),
 
+      0x31 => Some((Instruction::LD(LoadType::Word(LoadWordTarget::SP, LoadWordSource::D16)), 3)),
       0x32 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::HLI, LoadByteSource::A)), 2)),
       0x36 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::HL, LoadByteSource::D8)), 3)), 
       0x39 => Some((Instruction::ADDHL(WordTarget::SP), 2)),
@@ -129,7 +145,7 @@ impl Instruction {
       0x63 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::H, LoadByteSource::E)), 1)),
       0x64 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::H, LoadByteSource::H)), 1)),
       0x65 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::H, LoadByteSource::L)), 1)),
-      0x56 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::H, LoadByteSource::HL)), 2)),
+      0x66 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::H, LoadByteSource::HL)), 2)),
       0x67 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::H, LoadByteSource::A)), 1)),
       0x68 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::L, LoadByteSource::B)), 1)),
       0x69 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::L, LoadByteSource::C)), 1)),
@@ -184,6 +200,8 @@ impl Instruction {
 
       0xF0 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::A, LoadByteSource::A8)), 2)),
       0xF2 => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::A, LoadByteSource::ADRC)), 2)),
+      0xF8 => Some((Instruction::LD(LoadType::Word(LoadWordTarget::HL, LoadWordSource::SP8)), 4)),
+      0xF9 => Some((Instruction::LD(LoadType::Word(LoadWordTarget::SP, LoadWordSource::HL)), 2)),
       0xFA => Some((Instruction::LD(LoadType::Byte(LoadByteTarget::A, LoadByteSource::D16)), 4)),
       _ => None
     }

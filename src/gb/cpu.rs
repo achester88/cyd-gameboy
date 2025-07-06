@@ -18,7 +18,7 @@ impl Cpu {
             instruction_byte = self.bus.read_byte(self.pc + 1);
         }
 
-        let next_pc = if let Some((instruction, cc)) = Instruction::from_byte(instruction_byte, prefixed) {
+        let next_pc = if let Some((instruction, _cc)) = Instruction::from_byte(instruction_byte, prefixed) {
             self.execute(instruction)
         } else {
             let desc = format!("0x{}{:x}", if prefixed {"cb"} else {""}, instruction_byte);
@@ -66,23 +66,7 @@ impl Cpu {
                 self.pc.wrapping_add(1)
            },
            Instruction::ADDSP => {
-                let val = self.read_next_byte();
-                let mut did_overflow: bool;    
-                let mut new_value: u16;
-                let uval = (val & 0b0111_1111) as u16;
-
-                if val & 0b1000_0000 == 0 { //neg
-                    (new_value, did_overflow) = self.sp.overflowing_add(uval);
-                } else {//pos
-                    (new_value, did_overflow) = self.sp.overflowing_sub(uval);
-                }
-
-                self.registers.f.zero = false;
-                self.registers.f.subtract = false;
-                self.registers.f.carry = did_overflow;
-                self.registers.f.half_carry = (self.sp & 0b1111) + ((val as u16) & 0b1111) > 0b1111;
-
-                self.sp = new_value;
+               self.sp = self.add_sign_to_sp();
 
                self.pc.wrapping_add(2)
            }
@@ -130,8 +114,8 @@ impl Cpu {
                             LoadByteSource::BC => self.bus.read_byte(self.registers.get_bc()),
                             LoadByteSource::DE => self.bus.read_byte(self.registers.get_de()),
                             LoadByteSource::D16 => self.bus.read_byte(self.read_next_word()),
-                            LoadByteSource::ADRC => self.bus.read_byte((0xFF00 | self.registers.c as u16)),
-                            LoadByteSource::A8 => self.bus.read_byte((0xFF00 | self.read_next_byte() as u16)),
+                            LoadByteSource::ADRC => self.bus.read_byte(0xFF00 | self.registers.c as u16),
+                            LoadByteSource::A8 => self.bus.read_byte(0xFF00 | self.read_next_byte() as u16),
 
                         };
 
@@ -147,8 +131,8 @@ impl Cpu {
                              LoadByteTarget::BC => self.bus.write_byte(self.registers.get_bc(), source_value),
                              LoadByteTarget::DE => self.bus.write_byte(self.registers.get_de(), source_value),
                              LoadByteTarget::D16 => self.bus.write_byte(self.read_next_word(), source_value),
-                             LoadByteTarget::ADRC => self.bus.write_byte((0xFF00 | self.registers.c as u16), source_value),
-                             LoadByteTarget::A8 => self.bus.write_byte((0xFF00 | self.read_next_byte() as u16), source_value),
+                             LoadByteTarget::ADRC => self.bus.write_byte(0xFF00 | self.registers.c as u16, source_value),
+                             LoadByteTarget::A8 => self.bus.write_byte(0xFF00 | self.read_next_byte() as u16, source_value),
                         };
 
                         if source == LoadByteSource::HLI || target == LoadByteTarget::HLI {
@@ -160,12 +144,49 @@ impl Cpu {
                         }
 
 
-                       match source {
-                            LoadByteSource::D8 => self.pc.wrapping_add(2),
+                       let skip = match source {
+                            LoadByteSource::D16 => self.pc.wrapping_add(3),
+                            LoadByteSource::D8 | LoadByteSource::A8 => self.pc.wrapping_add(2),
                             _                  => self.pc.wrapping_add(1),
+                        };
+
+                       match target {
+                           LoadByteTarget::D16 => self.pc.wrapping_add(3),
+                           LoadByteTarget::A8 => self.pc.wrapping_add(2),
+                           _ => skip
                         }
+                    },
+
+                    LoadType::Word(target, source) => {
+                         let source_value = match source {
+                            LoadWordSource::D16 => self.read_next_word(),
+                            LoadWordSource::SP => self.sp,
+                            LoadWordSource::HL => self.registers.get_hl(),
+                            LoadWordSource::SP8 => {
+                                //Add the signed value e8 to SP and copy the result in HL.
+                                let new_val = self.add_sign_to_sp();
+                                self.sp = new_val;
+                                new_val
+                            },  
+                         };
+
+                         match target {
+                             LoadWordTarget::BC => self.registers.set_bc(source_value),
+                             LoadWordTarget::DE => self.registers.set_de(source_value),
+                             LoadWordTarget::HL => self.registers.set_hl(source_value),
+                             LoadWordTarget::A16 => self.bus.write_word(self.read_next_word(), source_value),
+                             LoadWordTarget::SP => self.sp = source_value,
+                         };
+
+                         if target == LoadWordTarget::A16 { return self.pc.wrapping_add(3) }
+
+                         match source {
+                             LoadWordSource::D16 => self.pc.wrapping_add(3),
+                             LoadWordSource::SP8 => self.pc.wrapping_add(2),
+                             _ => self.pc.wrapping_add(1)
+                         }
                     }
-               }
+           }
            },
            Instruction::PUSH(target) => {
                let value = match target {
@@ -284,5 +305,25 @@ impl Cpu {
        let msb = self.bus.read_byte(self.pc + 2) as u16;
             
        (msb << 8) | lsb
+    }
+
+    fn add_sign_to_sp(&mut self) -> u16 {
+        let val = self.read_next_byte();
+        let mut did_overflow: bool;    
+        let mut new_value: u16;
+        let uval = (val & 0b0111_1111) as u16;
+
+        if val & 0b1000_0000 == 0 { //neg
+            (new_value, did_overflow) = self.sp.overflowing_add(uval);
+        } else {//pos
+            (new_value, did_overflow) = self.sp.overflowing_sub(uval);
+        }
+
+        self.registers.f.zero = false;
+        self.registers.f.subtract = false;
+        self.registers.f.carry = did_overflow;
+        self.registers.f.half_carry = (self.sp & 0b1111) + ((val as u16) & 0b1111) > 0b1111;
+        
+        new_value
     }
 }
